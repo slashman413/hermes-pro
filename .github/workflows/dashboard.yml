@@ -1,0 +1,49 @@
+name: Revenue Dashboard
+
+on:
+  schedule:
+    - cron: "0 */4 * * *"  # Every 4 hours
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+jobs:
+  dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Checkout all income repos
+        run: |
+          for repo in hermes-make-money hermes-deal-finder hermes-seo-farm hermes-lead-magnet hermes-content-recycle hermes-shortsgen pixabay-shorts-bot; do
+            if [ ! -d "../$repo" ]; then
+              git clone --depth 1 "https://github.com/slashman413/$repo.git" "../$repo" 2>/dev/null || true
+            fi
+          done
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Generate dashboard
+        run: python scripts/dashboard.py
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          publish_branch: gh-pages
+
+      - name: Commit data
+        run: |
+          git config user.name "hermes-agent"
+          git config user.email "hermes@nousresearch.com"
+          git add docs/ data/
+          git diff --staged --quiet || git commit -m "auto: revenue dashboard update"
+          git push
