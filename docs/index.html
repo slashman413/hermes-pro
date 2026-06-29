@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>hermes-pro — $500/day 收入儀表板</title>
+<style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:-apple-system,sans-serif; background:#0a0a1a; color:#e2e8f0; }
+    .container { max-width:1000px; margin:auto; padding:20px; }
+    h1 { text-align:center; font-size:2.5rem; padding:40px 0 10px; }
+    .target-box { text-align:center; padding:30px; margin:20px 0; background:#1e293b; border-radius:20px; }
+    .target-box .big { font-size:4rem; font-weight:bold; }
+    .target-box .big.green { color:#22c55e; }
+    .target-box .big.red { color:#ef4444; }
+    .target-box .big.amber { color:#f59e0b; }
+    .progress-bar { background:#0f172a; border-radius:20px; height:30px; margin:20px 0; overflow:hidden; }
+    .progress-fill { height:100%; border-radius:20px; transition:width 1s; background:linear-gradient(90deg,#3b82f6,#a855f7); }
+    .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:15px; margin:20px 0; }
+    .stat-card { background:#1e293b; border-radius:16px; padding:20px; text-align:center; }
+    .stat-card .num { font-size:2rem; font-weight:bold; color:#3b82f6; }
+    .products { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:15px; margin:20px 0; }
+    .product-card { background:#1e293b; border-radius:16px; padding:20px; }
+    .product-card h3 { margin-bottom:5px; }
+    .product-card .desc { color:#94a3b8; font-size:0.9rem; }
+    .product-card .target { margin:10px 0; color:#f59e0b; }
+    .repo-link { color:#3b82f6; text-decoration:none; font-size:0.9rem; }
+    .income-table { width:100%; border-collapse:collapse; margin:20px 0; }
+    .income-table th,.income-table td { padding:10px; text-align:left; border-bottom:1px solid #1e293b; }
+    .income-table th { color:#94a3b8; }
+    .milestones { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin:20px 0; }
+    .milestone { background:#1e293b; border-radius:12px; padding:15px; text-align:center; }
+    .milestone.reached { border:2px solid #22c55e; }
+    .milestone .amt { font-weight:bold; color:#94a3b8; }
+    footer { text-align:center; padding:40px; color:#475569; }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1>💰 $500 / day</h1>
+        <p style="text-align:center;color:#64748b;">hermes-pro — 多產品收入儀表板</p>
+        
+        <div class="target-box">
+            <div class="big red">
+                $11.83
+            </div>
+            <p>每日收入 / $500 目標</p>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width:2.3658%"></div>
+            </div>
+            <p style="color:#94a3b8;">2.4% 完成 — 還差 $488.17/天</p>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="num">$354.87</div>
+                <p style="color:#94a3b8;font-size:0.9rem;">總收入</p>
+            </div>
+            <div class="stat-card">
+                <div class="num">$11.83</div>
+                <p style="color:#94a3b8;font-size:0.9rem;">日均收入</p>
+            </div>
+            <div class="stat-card">
+                <div class="num">$14,645</div>
+                <p style="color:#94a3b8;font-size:0.9rem;">距月目標</p>
+            </div>
+            <div class="stat-card">
+                <div class="num">7</div>
+                <p style="color:#94a3b8;font-size:0.9rem;">產品數</p>
+            </div>
+        </div>
+        
+        <h2>🚀 產品組合</h2>
+        <div class="products">
+        <div class="product-card">
+            <h3>ShortsGen Pro</h3>
+            <p class="desc">$0 - $499/mo</p>
+            <div class="target">目標: <strong>$17,220/月</strong></div>
+            <a href="https://github.com/slashman413/hermes-shortsgen" class="repo-link" target="_blank">🔗 GitHub</a>
+        </div>
+        <div class="product-card">
+            <h3>Deal Finder Pro</h3>
+            <p class="desc">$0 - $29/mo</p>
+            <div class="target">目標: <strong>$4,150/月</strong></div>
+            <a href="https://github.com/slashman413/hermes-deal-finder" class="repo-link" target="_blank">🔗 GitHub</a>
+        </div>
+        <div class="product-card">
+            <h3>SEO Content Engine</h3>
+            <p class="desc">$0 - $19/mo</p>
+            <div class="target">目標: <strong>$3,800/月</strong></div>
+            <a href="https://github.com/slashman413/hermes-seo-farm" class="repo-link" target="_blank">🔗 GitHub</a>
+        </div>
+        <div class="product-card">
+            <h3>Lead Magnet Pro</h3>
+            <p class="desc">$0 - $9/mo</p>
+            <div class="target">目標: <strong>$4,500/月</strong></div>
+            <a href="https://github.com/slashman413/hermes-lead-magnet" class="repo-link" target="_blank">🔗 GitHub</a>
+        </div>
+        <div class="product-card">
+            <h3>聯盟行銷</h3>
+            <p class="desc">Amazon/博客來聯盟佣金</p>
+            <div class="target">目標: <strong>$1,000/月</strong></div>
+            <a href="https://github.com/slashman413/hermes-deal-finder" class="repo-link" target="_blank">🔗 GitHub</a>
+        </div>
+        <div class="product-card">
+            <h3>AdSense 廣告</h3>
+            <p class="desc">工具站 + SEO 站廣告收入</p>
+            <div class="target">目標: <strong>$4,500/月</strong></div>
+            <a href="https://github.com/slashman413/hermes-seo-farm" class="repo-link" target="_blank">🔗 GitHub</a>
+        </div>
+        <div class="product-card">
+            <h3>GitHub Sponsors</h3>
+            <p class="desc"></p>
+            <div class="target">目標: <strong>$500/月</strong></div>
+            <a href="https://github.com/slashman413/hermes-make-money" class="repo-link" target="_blank">🔗 GitHub</a>
+        </div></div>
+        
+        <h2>🎯 里程碑</h2>
+        <div class="milestones">
+            <div class="milestone reached"><div class="amt">$1/天</div><div style="font-size:0.8rem;color:#475569;">起步</div></div> <div class="milestone reached"><div class="amt">$10/天</div><div style="font-size:0.8rem;color:#475569;">零用錢</div></div> <div class="milestone "><div class="amt">$50/天</div><div style="font-size:0.8rem;color:#475569;">基本收入</div></div> <div class="milestone "><div class="amt">$100/天</div><div style="font-size:0.8rem;color:#475569;">半職</div></div> <div class="milestone "><div class="amt">$300/天</div><div style="font-size:0.8rem;color:#475569;">全職</div></div> <div class="milestone "><div class="amt">$500/天</div><div style="font-size:0.8rem;color:#475569;">超標</div></div>
+        </div>
+        
+        <h2>📋 收入來源</h2>
+        <table class="income-table">
+            <tr><th>來源</th><th>收入</th><th>佔比</th></tr>
+            <tr><td>hermes-deal-finder</td><td>$354.87</td><td>100.0%</td></tr>
+        </table>
+        
+        <footer>
+            <p>hermes-pro · 最後更新: 2026-06-29 17:16</p>
+            <p style="margin-top:10px;">
+                <a href="https://github.com/slashman413/hermes-pro" style="color:#3b82f6;">GitHub</a>
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

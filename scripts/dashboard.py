@@ -119,7 +119,10 @@ def generate_dashboard() -> str:
     # Product cards
     product_cards = ""
     for key, product in PRODUCTS.items():
-        price_range = f"${min(product['tiers'].values())} - ${max(product['tiers'].values())}/mo"
+        if "tiers" in product:
+            price_range = f"${min(product['tiers'].values())} - ${max(product['tiers'].values())}/mo"
+        else:
+            price_range = product.get("description", "")
         target = product.get("target_monthly", 0) if "target_monthly" in product else 0
         if "target_customers" in product:
             target_revenue = sum(
@@ -135,7 +138,7 @@ def generate_dashboard() -> str:
         product_cards += f"""
         <div class="product-card">
             <h3>{product['name']}</h3>
-            <p class="desc">{product.get('description', price_range)}</p>
+            <p class="desc">{price_range}</p>
             <div class="target">目標: <strong>${target_revenue:,.0f}/月</strong></div>
             <a href="{product['url']}" class="repo-link" target="_blank">🔗 GitHub</a>
         </div>"""
