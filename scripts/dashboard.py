@@ -6,6 +6,17 @@ Aggregates data from ALL repos to show:
 - Customer acquisition
 - $500/day progress
 - Multi-product dashboard
+
+Revenue source of truth
+-----------------------
+REAL booked revenue is read exclusively from data/revenue.json, which is
+populated by hermes-pay/scripts/webhook.py (Ko-fi + Gumroad live webhook
+events). This file is synced here from hermes-pay — see PAYMENTS.md in
+hermes-pay for the sync procedure.
+
+NEVER use est_commission, modeled figures, or test entries from individual
+repo income_log.json files as revenue. Those files may still be scanned for
+informational context but are NOT counted in the dashboard totals.
 """
 import os, sys, json
 from pathlib import Path
@@ -14,6 +25,11 @@ from collections import defaultdict
 
 BASE_DIR = Path(__file__).parent.parent
 DATA_DIR = BASE_DIR / "data"
+
+# Canonical real-revenue log.  Populated by hermes-pay webhook handler.
+# If absent the dashboard correctly shows $0 booked.
+REVENUE_FILE = DATA_DIR / "revenue.json"
+
 ALL_REPOS = [
     "hermes-make-money",
     "hermes-deal-finder",
@@ -81,11 +97,67 @@ PRODUCTS = {
 }
 
 
-def scan_income_logs() -> dict:
-    """Scan all repos for income_log.json files."""
-    all_income = defaultdict(list)
+def load_real_revenue() -> dict:
+    """
+    Load REAL booked revenue from data/revenue.json (webhook-sourced records).
+
+    Returns:
+        {
+            "records": list of raw records,
+            "by_product": {product_key: [records]},
+            "total": float total in USD,
+        }
+
+    This is the ONLY function whose output counts toward the dashboard's
+    booked-revenue numbers.  It deliberately does NOT read est_commission or
+    any modeled figure.
+    """
+    by_product: dict = defaultdict(list)
     total = 0.0
-    
+
+    if REVENUE_FILE.exists():
+        try:
+            records = json.loads(REVENUE_FILE.read_text(encoding="utf-8"))
+            if not isinstance(records, list):
+                records = []
+        except Exception:
+            records = []
+    else:
+        records = []
+
+    for rec in records:
+        # Only count records with a real positive amount.
+        # est_commission / modeled fields are NOT present in this file;
+        # if someone accidentally merged an old income_log entry, guard here.
+        amt = rec.get("amount", 0)
+        try:
+            amt = float(amt)
+        except (TypeError, ValueError):
+            amt = 0.0
+        if amt <= 0:
+            continue
+        total += amt
+        product_key = rec.get("product", "unknown")
+        by_product[product_key].append(rec)
+
+    return {
+        "records": records,
+        "by_product": dict(by_product),
+        "total": round(total, 2),
+    }
+
+
+def scan_income_logs() -> dict:
+    """
+    DEPRECATED — do not use for revenue totals.
+
+    Scans per-repo income_log.json files.  These may contain modeled
+    est_commission values and test entries (e.g. success-test@example.com).
+    Kept for informational/diagnostic purposes ONLY.  The dashboard no longer
+    sums these into the displayed revenue figures.
+    """
+    all_income: dict = defaultdict(list)
+
     for repo, repo_dir in REPO_DIRS.items():
         log_file = repo_dir / "data" / "income_log.json"
         if log_file.exists():
@@ -93,26 +165,24 @@ def scan_income_logs() -> dict:
                 data = json.loads(log_file.read_text())
                 if isinstance(data, list):
                     for entry in data:
-                        amt = entry.get("amount", entry.get("est_commission", 0))
-                        total += amt
                         all_income[repo].append(entry)
                 elif isinstance(data, dict):
-                    amt = data.get("amount", data.get("est_commission", 0))
-                    total += amt
                     all_income[repo].append(data)
             except Exception:
                 pass
-    
-    return {"by_repo": dict(all_income), "total": round(total, 2)}
+
+    return {"by_repo": dict(all_income)}
 
 
 def generate_dashboard() -> str:
     """Generate the master dashboard HTML."""
-    income_data = scan_income_logs()
+    # ---- REAL booked revenue (webhook-sourced, deduplicated) ----
+    revenue = load_real_revenue()
+    total_income = revenue["total"]   # <-- this is the ONLY number shown as revenue
+
     now = datetime.now()
-    
-    # Calculate progress
-    total_income = income_data["total"]
+
+    # Calculate progress against targets
     monthly_progress = min(total_income / TARGET_MONTHLY * 100, 100)
     daily_progress = min(total_income / 30 / TARGET_DAILY * 100, 100)
     
@@ -221,10 +291,23 @@ def generate_dashboard() -> str:
             {' '.join(f'<div class="milestone {"reached" if total_income/30 >= m else ""}"><div class="amt">${m}/天</div><div style="font-size:0.8rem;color:#475569;">' + ['起步','零用錢','基本收入','半職','全職','超標'][i] + '</div></div>' for i, m in enumerate([1, 10, 50, 100, 300, 500]))}
         </div>
         
-        <h2>📋 收入來源</h2>
+        <h2>📋 Booked Revenue — Real Payments Only</h2>
+        <p style="color:#64748b;font-size:0.85rem;margin:-10px 0 10px;">
+          Source: data/revenue.json (Ko-fi + Gumroad webhooks). Est. commissions and modelled figures are excluded.
+        </p>
         <table class="income-table">
-            <tr><th>來源</th><th>收入</th><th>佔比</th></tr>
-            {' '.join(f'<tr><td>{repo}</td><td>${sum(e.get("amount", e.get("est_commission", 0)) for e in entries):.2f}</td><td>{sum(e.get("amount", e.get("est_commission", 0)) for e in entries)/total_income*100:.1f}%</td></tr>' for repo, entries in income_data['by_repo'].items()) if total_income > 0 else '<tr><td colspan="3" style="text-align:center;color:#475569;">還沒有收入記錄 — 第一個產品已上線！</td></tr>'}
+            <tr><th>產品</th><th>筆數</th><th>實收金額</th><th>佔比</th></tr>
+            {
+                ' '.join(
+                    f'<tr><td>{prod}</td>'
+                    f'<td>{len(recs)}</td>'
+                    f'<td>${sum(float(r.get("amount",0)) for r in recs):.2f}</td>'
+                    f'<td>{sum(float(r.get("amount",0)) for r in recs)/total_income*100:.1f}%</td></tr>'
+                    for prod, recs in revenue["by_product"].items()
+                )
+                if total_income > 0 else
+                '<tr><td colspan="4" style="text-align:center;color:#475569;">$0.00 booked — no real payments yet. Configure webhooks per hermes-pay/PAYMENTS.md.</td></tr>'
+            }
         </table>
         
         <footer>
@@ -243,19 +326,32 @@ if __name__ == "__main__":
     docs_dir = BASE_DIR / "docs"
     docs_dir.mkdir(parents=True, exist_ok=True)
     (docs_dir / "index.html").write_text(dashboard, encoding="utf-8")
-    
-    income = scan_income_logs()
-    print(f"💰 總收入: ${income['total']:.2f}")
-    print(f"📊 活躍來源: {len(income['by_repo'])}")
-    print(f"🎯 進度: ${income['total']/30:.2f}/天 → $500/天目標")
-    
-    # Save income snapshot
+
+    # Use real revenue only — no modelled numbers
+    revenue = load_real_revenue()
+    booked = revenue["total"]
+    txn_count = len(revenue["records"])
+
+    print(f"Real booked revenue: ${booked:.2f}  ({txn_count} transactions)")
+    print(f"Daily rate: ${booked/30:.2f}/day  target $500/day")
+    print(f"Progress: {booked/30/TARGET_DAILY*100:.1f}%")
+    if txn_count == 0:
+        print("NOTE: No real payments yet. Set up webhooks per hermes-pay/PAYMENTS.md.")
+
+    # Save snapshot — clearly labelled as booked (real) vs projected
     snapshot = {
         "date": datetime.now().isoformat(),
-        "total_income": income["total"],
-        "daily_rate": round(income["total"] / 30, 2),
-        "progress_pct": round(income["total"] / 30 / TARGET_DAILY * 100, 2),
+        # --- REAL booked revenue (webhook-sourced) ---
+        "booked_total_usd": booked,
+        "booked_daily_rate_usd": round(booked / 30, 2),
+        "booked_txn_count": txn_count,
+        "booked_progress_pct": round(booked / 30 / TARGET_DAILY * 100, 2),
+        # --- Targets (projections only — NOT revenue) ---
+        "target_daily_usd": TARGET_DAILY,
+        "target_monthly_usd": TARGET_MONTHLY,
+        # --- Meta ---
         "active_products": len(PRODUCTS),
-        "sources": list(income["by_repo"].keys()),
+        "revenue_source": str(REVENUE_FILE),
     }
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
     (DATA_DIR / "snapshot.json").write_text(json.dumps(snapshot, indent=2))
