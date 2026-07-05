@@ -1,0 +1,26 @@
+{
+  "_comment": "Experiment 0 — weekly funnel metrics per money-product. One row per product per week. Fill the GA-side numbers every Monday from GA4 (pageviews, checkout_opens/email_signups, trials); 'paid' should match real payments in revenue.json for that week. Review weekly. See execution/shared/metrics-and-instrumentation.md in the agents-discussion repo.",
+  "target_conversion": {
+    "saas-starter": "2-4% pageview->paid on warm launch traffic",
+    "twse-premium": "2% pageview->paid blended; 20%+ trial->paid"
+  },
+  "weeks": [
+    {
+      "week_of": "2026-07-06",
+      "products": {
+        "saas-starter": {
+          "pageviews": 0,
+          "checkout_opens": 0,
+          "trials": 0,
+          "paid": 0
+        },
+        "twse-premium": {
+          "pageviews": 0,
+          "email_signups": 0,
+          "trials": 0,
+          "paid": 0
+        }
+      }
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 {
-  "date": "2026-07-05T07:17:46.326478",
+  "date": "2026-07-05T16:51:00.866206",
   "booked_total_usd": 0.0,
   "booked_daily_rate_usd": 0.0,
   "booked_txn_count": 0,
@@ -7,5 +7,5 @@
   "target_daily_usd": 500.0,
   "target_monthly_usd": 15000.0,
   "active_products": 7,
-  "revenue_source": "/home/runner/work/hermes-pro/hermes-pro/data/revenue.json"
+  "revenue_source": "/home/maxchang/workspace/github/slashman413/hermes-pro/data/revenue.json"
 }

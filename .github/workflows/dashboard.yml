@@ -31,6 +31,26 @@ jobs:
             fi
           done
 
+      - name: Sync real revenue log from hermes-pay
+        run: |
+          # Canonical webhook-sourced revenue lives in hermes-pay/data/revenue.json.
+          # Pull it in so the cockpit reflects REAL Ko-fi/Gumroad payments, not a stale copy.
+          # If hermes-pay is private, add a PAT with repo:read as secret HERMES_PAY_TOKEN.
+          if [ ! -d "../hermes-pay" ]; then
+            if [ -n "${{ secrets.HERMES_PAY_TOKEN }}" ]; then
+              git clone --depth 1 "https://x-access-token:${{ secrets.HERMES_PAY_TOKEN }}@github.com/slashman413/hermes-pay.git" "../hermes-pay" 2>/dev/null || true
+            else
+              git clone --depth 1 "https://github.com/slashman413/hermes-pay.git" "../hermes-pay" 2>/dev/null || true
+            fi
+          fi
+          if [ -f "../hermes-pay/data/revenue.json" ]; then
+            mkdir -p data
+            cp "../hermes-pay/data/revenue.json" data/revenue.json
+            echo "synced revenue.json ($(wc -c < data/revenue.json) bytes)"
+          else
+            echo "NOTE: hermes-pay/data/revenue.json unreachable (private repo needs HERMES_PAY_TOKEN, or webhook host has not pushed yet). Dashboard will show \$0 booked."
+          fi
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'

@@ -30,6 +30,10 @@ DATA_DIR = BASE_DIR / "data"
 # If absent the dashboard correctly shows $0 booked.
 REVENUE_FILE = DATA_DIR / "revenue.json"
 
+# Experiment 0 funnel metrics (pageview -> checkout/signup -> trial -> paid),
+# filled weekly from GA4.  If absent the funnel section is hidden.
+FUNNEL_FILE = DATA_DIR / "funnel.json"
+
 ALL_REPOS = [
     "hermes-make-money",
     "hermes-deal-finder",
@@ -147,6 +151,53 @@ def load_real_revenue() -> dict:
     }
 
 
+def load_funnel() -> dict:
+    """
+    Load the latest week's funnel metrics from data/funnel.json.
+
+    Returns {"week_of": str, "products": {...}} for the most recent week,
+    or {} if the file is missing/empty.  This is the top-of-funnel companion
+    to booked revenue: it answers "is traffic reaching checkout?", which
+    revenue alone cannot.
+    """
+    if not FUNNEL_FILE.exists():
+        return {}
+    try:
+        data = json.loads(FUNNEL_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    weeks = data.get("weeks", [])
+    if not weeks:
+        return {}
+    # Latest by week_of (ISO date sorts lexically)
+    latest = sorted(weeks, key=lambda w: w.get("week_of", ""))[-1]
+    return latest
+
+
+def render_funnel_rows(funnel: dict) -> str:
+    """Build the funnel table rows (pageview -> checkout/signup -> trial -> paid)."""
+    products = funnel.get("products", {})
+    if not products:
+        return ('<tr><td colspan="6" style="text-align:center;color:#475569;">'
+                'No funnel data yet — fill data/funnel.json weekly from GA4.</td></tr>')
+    rows = ""
+    for name, m in products.items():
+        views = m.get("pageviews", 0) or 0
+        mid = m.get("checkout_opens", m.get("email_signups", 0)) or 0
+        trials = m.get("trials", 0) or 0
+        paid = m.get("paid", 0) or 0
+        conv = f"{paid / views * 100:.1f}%" if views else "—"
+        rows += (
+            f'<tr><td>{name}</td>'
+            f'<td>{views:,}</td>'
+            f'<td>{mid:,}</td>'
+            f'<td>{trials:,}</td>'
+            f'<td>{paid:,}</td>'
+            f'<td>{conv}</td></tr>'
+        )
+    return rows
+
+
 def scan_income_logs() -> dict:
     """
     DEPRECATED — do not use for revenue totals.
@@ -179,6 +230,8 @@ def generate_dashboard() -> str:
     # ---- REAL booked revenue (webhook-sourced, deduplicated) ----
     revenue = load_real_revenue()
     total_income = revenue["total"]   # <-- this is the ONLY number shown as revenue
+
+    funnel = load_funnel()            # top-of-funnel metrics (Experiment 0)
 
     now = datetime.now()
 
@@ -310,6 +363,15 @@ def generate_dashboard() -> str:
             }
         </table>
         
+        <h2>📈 Funnel — Pageview → Paid (Experiment 0)</h2>
+        <p style="color:#64748b;font-size:0.85rem;margin:-10px 0 10px;">
+          Week of {funnel.get('week_of', '—')} · source: GA4 (fill data/funnel.json weekly). Revenue tells you <em>if</em> money came in; this tells you <em>where</em> the funnel leaks.
+        </p>
+        <table class="income-table">
+            <tr><th>產品</th><th>Pageviews</th><th>Checkout/Signup</th><th>Trials</th><th>Paid</th><th>View→Paid</th></tr>
+            {render_funnel_rows(funnel)}
+        </table>
+
         <footer>
             <p>hermes-pro · 最後更新: {now.strftime('%Y-%m-%d %H:%M')}</p>
             <p style="margin-top:10px;">
